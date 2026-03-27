@@ -1023,4 +1023,4 @@ Este projeto foi desenvolvido como parte de um desafio técnico para vaga de Dat
 
 ## 👨‍💻 Autor
 
-Desenvolvido com ❤️ seguindo as melhores práticas de engenharia de software.
+Desenvolvido com muito conhecimento de noites sem dormi e seguindo as melhores práticas de engenharia de software.
