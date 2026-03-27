@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models.database_models import Imovel
+from api.models.database_models import Imovel, Vinculo
 from api.models.schemas import ImovelResponse, ProprietarioResponse
 from api.services.cpf_anonymizer import CPFAnonymizer
 
@@ -20,7 +20,7 @@ class ImovelService:
             select(Imovel)
             .where(Imovel.codigo_incra == codigo_incra)
             .options(
-                selectinload(Imovel.vinculos).selectinload(lambda v: v.pessoa)
+                selectinload(Imovel.vinculos).selectinload(Vinculo.pessoa)
             )
         )
 
@@ -42,6 +42,9 @@ class ImovelService:
 
         return ImovelResponse(
             codigo_incra=imovel.codigo_incra,
+            nome_imovel=imovel.nome_imovel,
+            uf=imovel.uf,
+            municipio=imovel.municipio,
             area_ha=imovel.area_ha,
             situacao=imovel.situacao,
             proprietarios=proprietarios

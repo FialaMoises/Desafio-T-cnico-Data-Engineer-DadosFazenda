@@ -1,43 +1,60 @@
 # 🌾 SNCR Data Pipeline
 
-Pipeline completo de extração, armazenamento e exposição de dados do Sistema Nacional de Cadastro Rural (SNCR), desenvolvido com arquitetura limpa, princípios SOLID e boas práticas de engenharia de software.
+Pipeline completo de extração, armazenamento e exposição de dados do Sistema Nacional de Cadastro Rural (SNCR), desenvolvido com arquitetura limpa, princípios SOLID e interface web moderna para visualização e gestão dos dados.
 
 ---
 
 ## 📋 Índice
 
 - [Visão Geral](#-visão-geral)
+- [Demonstração](#-demonstração)
 - [Arquitetura](#-arquitetura)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Pré-requisitos](#-pré-requisitos)
-- [Instalação e Execução](#-instalação-e-execução)
-- [Etapa 1: Extração](#-etapa-1-extração)
-- [Etapa 2: Modelagem e Carga](#-etapa-2-modelagem-e-carga)
-- [Etapa 3: Índices e Performance](#-etapa-3-índices-e-performance)
-- [Etapa 4: API REST](#-etapa-4-api-rest)
+- [Início Rápido](#-início-rápido)
+- [Usando o Frontend](#-usando-o-frontend)
+- [API REST](#-api-rest)
+- [Extração de Dados](#-extração-de-dados)
+- [Modelagem do Banco](#-modelagem-do-banco)
+- [Performance e Índices](#-performance-e-índices)
 - [Decisões Técnicas](#-decisões-técnicas)
-- [O que faria diferente com mais tempo](#-o-que-faria-diferente-com-mais-tempo)
+- [Tecnologias](#-tecnologias)
 
 ---
 
 ## 🎯 Visão Geral
 
-Este projeto implementa um pipeline de dados end-to-end que:
+Este projeto implementa um **pipeline de dados end-to-end** completo que:
 
-1. **Extrai** dados de imóveis rurais de múltiplos estados brasileiros via web scraping
-2. **Transforma** e valida os dados brutos
-3. **Carrega** no PostgreSQL com idempotência garantida
-4. **Expõe** via API REST com CPF anonimizado
+1. **📥 Extrai** dados de imóveis rurais via web scraping do sistema SNCR
+2. **🔄 Transforma** e valida dados com idempotência garantida
+3. **💾 Armazena** em PostgreSQL com schema normalizado (3NF)
+4. **🌐 Expõe** via API REST com FastAPI + documentação automática
+5. **🖥️ Visualiza** através de interface web moderna e responsiva
 
-### Características Principais
+### ✨ Características Principais
 
-- ✅ Arquitetura limpa com separação de responsabilidades (Domain, Application, Infrastructure)
-- ✅ Princípios SOLID aplicados em todos os módulos
-- ✅ Resiliência com retry automático e checkpoint de progresso
-- ✅ Modelagem normalizada do banco de dados
-- ✅ Performance otimizada com índices estratégicos
-- ✅ API REST com documentação automática (Swagger)
-- ✅ Containerização completa com Docker
+- ✅ **Clean Architecture** com separação clara de responsabilidades (Domain, Application, Infrastructure)
+- ✅ **Princípios SOLID** aplicados em todos os módulos
+- ✅ **Resiliência** com retry automático, checkpoint de progresso e tratamento de erros
+- ✅ **Frontend Moderno** com 3 interfaces: busca por código, busca avançada e execução de pipeline
+- ✅ **Busca Avançada** com filtros dinâmicos baseados nos dados do banco
+- ✅ **Pipeline Web** com logs em tempo real via Server-Sent Events
+- ✅ **Performance** otimizada com índices estratégicos (queries < 2ms)
+- ✅ **Docker** containerização completa de todos os serviços
+- ✅ **API REST** com documentação Swagger automática
+
+---
+
+## 🎬 Demonstração
+
+### Frontend - 3 Interfaces Integradas
+
+1. **🔍 Buscar por Código** - Busca direta por Código INCRA
+2. **🔎 Busca Avançada** - Filtros dinâmicos (estado, município, área, proprietário, etc)
+3. **⚙️ Executar Pipeline** - Extração e carregamento com logs em tempo real
+
+Acesse: **http://localhost:3000** após iniciar os containers.
 
 ---
 
@@ -45,29 +62,48 @@ Este projeto implementa um pipeline de dados end-to-end que:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   SNCR Web (Railway)                        │
+│                   SNCR Web (Fonte de Dados)                 │
 │       https://data-engineer-challenge-production...         │
 └────────────────────────┬────────────────────────────────────┘
                          │
-                ┌────────▼────────┐
-                │   Extractor     │  Clean Architecture
-                │  (httpx async)  │  Retry + Checkpoint
-                └────────┬────────┘
-                         │ CSV files
-                ┌────────▼────────┐
-                │     Loader      │  SOLID principles
-                │  (PostgreSQL)   │  Upsert idempotente
-                └────────┬────────┘
+         ┌───────────────▼─────────────┐
+         │      Extractor Module        │
+         │   Clean Architecture         │
+         │   - Domain Layer             │
+         │   - Application Layer        │
+         │   - Infrastructure Layer     │
+         │   Retry + Checkpoint + Logs  │
+         └───────────────┬──────────────┘
+                         │ CSV Files
+         ┌───────────────▼──────────────┐
+         │       Loader Module           │
+         │   SOLID Principles            │
+         │   Upsert Idempotente          │
+         │   Validação + Transformação   │
+         └───────────────┬──────────────┘
                          │
-                ┌────────▼────────┐
-                │   PostgreSQL    │  Schema normalizado
-                │     (Docker)    │  Índices otimizados
-                └────────┬────────┘
+         ┌───────────────▼──────────────┐
+         │      PostgreSQL 16            │
+         │   Schema Normalizado (3NF)    │
+         │   Índices Otimizados          │
+         │   - imoveis                   │
+         │   - pessoas                   │
+         │   - vinculos                  │
+         └───────────────┬──────────────┘
                          │
-                ┌────────▼────────┐
-                │    FastAPI      │  GET /imovel/{codigo}
-                │     (Docker)    │  CPF anonimizado
-                └─────────────────┘
+      ┌──────────────────┴─────────────────┐
+      │                                     │
+┌─────▼──────┐                    ┌────────▼────────┐
+│  FastAPI   │                    │   Nginx         │
+│  REST API  │◄───────────────────┤   Frontend      │
+│  + Swagger │   CORS Enabled     │   (SPA)         │
+└────────────┘                    └─────────────────┘
+    │
+    ├─ GET  /imovel/{codigo}          # Busca por código
+    ├─ GET  /search/filters            # Filtros dinâmicos
+    ├─ GET  /search/imoveis            # Busca avançada
+    ├─ GET  /pipeline/run              # Executar pipeline (SSE)
+    └─ GET  /pipeline/status           # Status do pipeline
 ```
 
 ---
@@ -75,179 +111,398 @@ Este projeto implementa um pipeline de dados end-to-end que:
 ## 📁 Estrutura do Projeto
 
 ```
-sncr-pipeline/
-├── extractor/                    # Módulo de extração
-│   ├── domain/
-│   │   ├── entities.py          # Entidades de domínio
-│   │   └── repositories.py      # Interfaces (abstrações)
+Desafio-Técnico-Data-Engineer-DadosFazenda/
+├── extractor/                         # 📥 Módulo de Extração
+│   ├── domain/                        # Entidades e interfaces
+│   │   ├── entities.py               # Estado, Municipio, Captcha, etc
+│   │   └── repositories.py           # Contratos (abstrações)
 │   ├── application/
-│   │   └── scraper_service.py   # Lógica de negócio
+│   │   └── scraper_service.py        # Orquestração da extração
 │   ├── infrastructure/
-│   │   ├── http_client.py       # Implementação HTTP
-│   │   ├── checkpoint_manager.py
-│   │   └── metadata_writer.py
+│   │   ├── http_client.py            # Implementação HTTP (httpx)
+│   │   ├── checkpoint_manager.py     # Salvamento de progresso
+│   │   └── metadata_writer.py        # Logs estruturados
 │   ├── config/
-│   │   ├── settings.py          # Configurações
-│   │   └── logger.py
-│   └── main.py                  # Entry point
+│   │   ├── settings.py               # Configurações
+│   │   └── logger.py                 # Setup de logging
+│   └── main.py                       # Entry point
 │
-├── loader/                       # Módulo de carga
+├── loader/                            # 💾 Módulo de Carga
 │   ├── domain/
-│   │   ├── entities.py
-│   │   └── repositories.py
+│   │   ├── entities.py               # Imovel, Pessoa, Vinculo
+│   │   └── repositories.py           # Contratos
 │   ├── services/
-│   │   ├── loader_service.py
-│   │   └── transformer.py       # Validação e transformação
+│   │   ├── loader_service.py         # Orquestração da carga
+│   │   └── transformer.py            # Validação e transformação
 │   ├── infrastructure/
-│   │   ├── database.py          # Implementação PostgreSQL
-│   │   └── csv_reader.py
+│   │   ├── database.py               # Conexão PostgreSQL + UPSERT
+│   │   └── csv_reader.py             # Leitura de CSVs
 │   ├── config/
-│   │   └── settings.py
-│   └── main.py
+│   │   └── settings.py               # Configurações
+│   └── main.py                       # Entry point
 │
-├── api/                          # Módulo API
+├── api/                               # 🌐 Módulo API REST
 │   ├── routers/
-│   │   └── imovel.py            # Endpoints
+│   │   ├── imovel.py                 # GET /imovel/{codigo_incra}
+│   │   ├── search.py                 # Busca avançada
+│   │   └── pipeline.py               # Execução de pipeline
 │   ├── services/
-│   │   ├── imovel_service.py    # Lógica de negócio
-│   │   └── cpf_anonymizer.py    # Anonimização
+│   │   ├── imovel_service.py         # Lógica de busca
+│   │   ├── search_service.py         # Busca com filtros
+│   │   └── cpf_anonymizer.py         # Anonimização de CPF
 │   ├── models/
-│   │   ├── database_models.py   # SQLAlchemy models
-│   │   └── schemas.py           # Pydantic schemas
+│   │   ├── database_models.py        # SQLAlchemy ORM models
+│   │   └── schemas.py                # Pydantic request/response
 │   ├── config/
-│   │   ├── settings.py
-│   │   └── database.py
-│   └── main.py
+│   │   ├── settings.py               # Configurações
+│   │   └── database.py               # Setup async engine
+│   └── main.py                       # FastAPI app
 │
-├── db/
-│   ├── schema.sql               # DDL completo
-│   └── indexes.sql              # Índices + justificativas
+├── frontend/                          # 🖥️ Interface Web
+│   ├── index.html                    # SPA completa (3 abas)
+│   ├── Dockerfile                    # Build nginx
+│   ├── start-frontend.ps1            # Script PowerShell
+│   └── README.md                     # Documentação
 │
-├── docker-compose.yml           # Orquestração
-├── Dockerfile                   # Build da API
-├── requirements.txt
-├── pipeline.sh / pipeline.bat   # Script de execução completa
-├── .env.example
-└── README.md
+├── db/                                # 🗄️ Banco de Dados
+│   ├── schema.sql                    # DDL completo (3 tabelas)
+│   └── indexes.sql                   # Índices otimizados + docs
+│
+├── docker-compose.yml                # 🐳 Orquestração (5 serviços)
+├── Dockerfile                        # Build Python (multi-use)
+├── requirements.txt                  # Dependências Python
+├── .env.example                      # Template de variáveis
+└── README.md                         # Este arquivo
 ```
 
 ---
 
 ## 🔧 Pré-requisitos
 
-- **Docker** e **Docker Compose**
-- **Python 3.11+**
+- **Docker** (v20.10+) e **Docker Compose** (v2.0+)
 - **Git**
 
+Opcional (para desenvolvimento):
+- **Python 3.11+**
+- **PostgreSQL 16** (se quiser rodar fora do Docker)
+
 ---
 
-## 🚀 Instalação e Execução
+## 🚀 Início Rápido
 
-### 1. Clone o repositório
+### Opção 1: Iniciar Tudo (Recomendado)
 
 ```bash
+# 1. Clone o repositório
 git clone <seu-repositorio>
-cd sncr-pipeline
+cd Desafio-Técnico-Data-Engineer-DadosFazenda
+
+# 2. Inicie todos os serviços
+docker-compose up -d
+
+# 3. Aguarde ~15 segundos para os serviços iniciarem
+# Você verá 5 containers rodando:
+#   - sncr-postgres    (banco de dados)
+#   - sncr-api         (FastAPI REST)
+#   - sncr-frontend    (Nginx + SPA)
+#   - extractor        (para usar via docker-compose run)
+#   - loader           (para usar via docker-compose run)
 ```
 
-### 2. Configure as variáveis de ambiente
+### Opção 2: Passo a Passo
 
 ```bash
-cp .env.example .env
+# 1. Subir banco de dados
+docker-compose up -d postgres
+
+# 2. Executar extração (escolha os estados desejados)
+docker-compose run --rm extractor python -m extractor.main --ufs PA RJ PR
+
+# 3. Carregar dados no banco
+docker-compose run --rm loader
+
+# 4. Subir API e Frontend
+docker-compose up -d api frontend
 ```
 
-O arquivo `.env` padrão já funciona com o Docker Compose. Edite apenas se necessário.
-
-### 3. Instale as dependências Python
+### ✅ Verificar se está funcionando
 
 ```bash
-pip install -r requirements.txt
+# API Health Check
+curl http://localhost:8001/
+
+# Frontend
+curl http://localhost:3000/
 ```
 
-### 4. Execute o pipeline completo
-
-**Linux/Mac:**
-```bash
-chmod +x pipeline.sh
-./pipeline.sh "SP MG GO"
-```
-
-**Windows:**
-```cmd
-pipeline.bat "SP MG GO"
-```
-
-Isso irá:
-1. Subir o PostgreSQL via Docker
-2. Executar a extração dos 3 estados
-3. Carregar os dados no banco
-4. Subir a API
-
-### 5. Acesse a API
-
-- **Base URL:** http://localhost:8000
-- **Documentação (Swagger):** http://localhost:8000/docs
-- **Exemplo de consulta:**
-  ```bash
-  curl http://localhost:8000/imovel/12345678901234567
-  ```
+**Pronto!** Acesse:
+- 🌐 **Frontend**: http://localhost:3000
+- 📚 **API Docs**: http://localhost:8001/docs
+- 🔍 **API Base**: http://localhost:8001
 
 ---
 
-## 🔍 Etapa 1: Extração
+## 🖥️ Usando o Frontend
 
-### Arquitetura da Extração
+Acesse **http://localhost:3000** no navegador.
 
-O módulo `extractor` segue **Clean Architecture** com três camadas:
+### Aba 1: 🔍 Buscar por Código
 
-1. **Domain:** Entidades e interfaces (independente de frameworks)
-2. **Application:** Lógica de negócio (ScraperService)
-3. **Infrastructure:** Implementações concretas (HTTP, Checkpoint, Logs)
+Busca direta por Código INCRA (17 dígitos).
 
-### Como Funciona
+**Como usar:**
+1. Digite o código no campo (ex: `26001000017`)
+2. Clique em "Buscar" ou pressione Enter
+3. Veja os detalhes do imóvel e proprietários
 
-```python
-service = ScraperService(
-    estado_repo=HttpEstadoRepository(client),
-    municipio_repo=HttpMunicipioRepository(client),
-    captcha_repo=HttpCaptchaRepository(client),
-    export_repo=HttpExportRepository(client),
-    checkpoint_manager=CheckpointManager(settings.checkpoint_dir),
-    metadata_writer=MetadataWriter(settings.log_dir),
-    logger=logger,
-)
+**Exemplos de códigos válidos** (clique direto nos links):
+- `11001000016`
+- `26001000017`
+- `26001000000`
+
+### Aba 2: 🔎 Busca Avançada
+
+Busca com **filtros dinâmicos** que se atualizam conforme os dados no banco.
+
+**Filtros disponíveis:**
+- **Estado (UF)**: Dropdown com todos os estados que têm dados
+- **Município**: Dropdown que se atualiza ao selecionar o estado
+- **Situação**: Dropdown com situações cadastradas (Ativo, Inativo, etc)
+- **Nome do Imóvel**: Busca parcial (ex: "Fazenda")
+- **Nome do Proprietário**: Busca parcial (ex: "Silva")
+- **Área Mínima/Máxima**: Faixa de hectares
+- **Limite de Resultados**: 10, 50, 100 ou 200 registros
+
+**Como usar:**
+1. Selecione os filtros desejados
+2. Clique em "🔍 Buscar"
+3. Veja a lista de imóveis com todos os detalhes
+4. Use "🔄 Limpar Filtros" para resetar
+
+**Exemplos de buscas:**
+- Todos os imóveis do Pará: `UF = PA`
+- Fazendas grandes: `Área Mínima = 100`
+- Proprietários "Silva" em SP: `Nome Pessoa = Silva, UF = SP`
+- Imóveis ativos com + de 50 ha: `Situação = Ativo, Área Mínima = 50`
+
+### Aba 3: ⚙️ Executar Pipeline
+
+Execute **extração + carregamento** diretamente pelo navegador com **logs em tempo real**.
+
+**Como usar:**
+1. Selecione os estados desejados (clique nos botões)
+   - Estados pré-selecionados: PA, RJ, PR
+2. Clique em "▶️ Iniciar Extração e Carregamento"
+3. Acompanhe os logs em tempo real no console
+4. Veja a barra de progresso avançar:
+   - 0% → 50% (Extração)
+   - 50% → 80% (Carregamento)
+   - 80% → 100% (Concluído)
+
+**Funcionalidades:**
+- ✅ Logs coloridos por tipo (INFO, SUCCESS, ERROR)
+- ✅ Timestamps em cada linha
+- ✅ Auto-scroll para última linha
+- ✅ Botão desabilitado durante execução
+- ✅ Estatísticas atualizadas automaticamente ao concluir
+
+---
+
+## 🌐 API REST
+
+### Endpoints Disponíveis
+
+#### 1. Buscar Imóvel por Código
+
+```http
+GET /imovel/{codigo_incra}
+```
+
+**Exemplo:**
+```bash
+curl http://localhost:8001/imovel/26001000017
+```
+
+**Resposta (200 OK):**
+```json
+{
+  "codigo_incra": "26001000017",
+  "nome_imovel": "Fazenda Santa Clara",
+  "uf": "PE",
+  "municipio": "São Paulo",
+  "area_ha": 150.25,
+  "situacao": "Ativo",
+  "proprietarios": [
+    {
+      "nome_completo": "João da Silva",
+      "cpf": "12345678901",
+      "vinculo": "Proprietário",
+      "participacao_pct": "100.00"
+    }
+  ]
+}
+```
+
+#### 2. Obter Filtros Disponíveis
+
+```http
+GET /search/filters
+```
+
+**Resposta:**
+```json
+{
+  "estados": ["PA", "RJ", "PR", "SP"],
+  "municipios_by_estado": {
+    "PA": ["Belém", "Santarém"],
+    "RJ": ["Rio de Janeiro", "Niterói"]
+  },
+  "situacoes": ["Ativo", "Inativo"],
+  "estatisticas": {
+    "total_imoveis": 54,
+    "total_pessoas": 330,
+    "total_vinculos": 330
+  },
+  "area_range": {
+    "min": 0.5,
+    "max": 5000.0
+  }
+}
+```
+
+#### 3. Busca Avançada
+
+```http
+GET /search/imoveis?uf=PA&area_min=100&limit=50
+```
+
+**Parâmetros (todos opcionais):**
+- `uf`: Estado (ex: PA, RJ)
+- `municipio`: Município (busca parcial)
+- `situacao`: Situação do imóvel
+- `area_min`: Área mínima em hectares
+- `area_max`: Área máxima em hectares
+- `nome_imovel`: Nome do imóvel (busca parcial)
+- `nome_pessoa`: Nome do proprietário (busca parcial)
+- `limit`: Limite de resultados (1-500, padrão: 100)
+- `offset`: Offset para paginação (padrão: 0)
+
+**Exemplos de uso:**
+```bash
+# Imóveis no Pará
+curl "http://localhost:8001/search/imoveis?uf=PA"
+
+# Fazendas entre 100 e 500 hectares
+curl "http://localhost:8001/search/imoveis?area_min=100&area_max=500"
+
+# Proprietários com nome "Silva"
+curl "http://localhost:8001/search/imoveis?nome_pessoa=Silva"
+
+# Combinação de filtros
+curl "http://localhost:8001/search/imoveis?uf=RJ&situacao=Ativo&area_min=50&limit=20"
+```
+
+#### 4. Executar Pipeline (SSE)
+
+```http
+GET /pipeline/run?estados=PA,RJ,PR
+```
+
+Retorna **Server-Sent Events** com logs em tempo real.
+
+**Exemplo com curl:**
+```bash
+curl -N "http://localhost:8001/pipeline/run?estados=PA,RJ,PR"
+```
+
+**Exemplo de resposta (stream):**
+```
+data: {"type":"info","message":"Iniciando extração dos estados: PA, RJ, PR","timestamp":"2026-03-27T10:30:00"}
+
+data: {"type":"log","message":"Extraindo PA - Belém...","step":"extração","timestamp":"2026-03-27T10:30:05"}
+
+data: {"type":"success","message":"Extração concluída!","step":"extração","timestamp":"2026-03-27T10:35:00"}
+
+data: {"type":"complete","message":"Pipeline executado com sucesso! 🎉","timestamp":"2026-03-27T10:40:00"}
+```
+
+#### 5. Status do Pipeline
+
+```http
+GET /pipeline/status
+```
+
+**Resposta:**
+```json
+{
+  "running": false,
+  "current_step": null,
+  "estados": []
+}
+```
+
+### 📚 Documentação Interativa
+
+Acesse **http://localhost:8001/docs** para explorar a documentação Swagger completa com:
+- Todos os endpoints disponíveis
+- Parâmetros e tipos
+- Exemplos de request/response
+- Teste direto pelo navegador
+
+---
+
+## 📥 Extração de Dados
+
+### Executar Manualmente
+
+```bash
+# Via Docker (recomendado)
+docker-compose run --rm extractor python -m extractor.main --ufs PA RJ PR
+
+# Via Python local
+python -m extractor.main --ufs PA RJ PR
+```
+
+### Opções Disponíveis
+
+```bash
+# Retomar extração (usa checkpoint)
+python -m extractor.main --ufs SP MG
+
+# Reiniciar do zero
+python -m extractor.main --ufs SP --no-resume
+
+# Ver ajuda
+python -m extractor.main --help
 ```
 
 ### Resiliência
 
-- **Retry automático:** Até 3 tentativas com backoff exponencial
-- **Checkpointing:** Estado salvo após cada município
-- **Logging estruturado:** JSONL com timestamp, UF, município, status
+- **Retry Automático**: Até 3 tentativas com backoff exponencial
+- **Checkpoint**: Estado salvo após cada município em `extractor/checkpoint.json`
+- **Logging**: Logs estruturados em `extractor/metadata.jsonl`
+- **Anti-Blocking**: User-Agent rotation e delays configuráveis
 
-### Executar apenas a extração
+### Arquivos Gerados
 
-```bash
-python -m extractor.main --ufs SP MG GO
 ```
-
-Para retomar extração interrompida:
-```bash
-python -m extractor.main --ufs SP MG GO
-```
-
-Para reiniciar do zero:
-```bash
-python -m extractor.main --ufs SP --no-resume
+extractor/
+├── output/
+│   ├── AC_Campo_Grande_20260327_103000.csv
+│   ├── PA_Belem_20260327_103100.csv
+│   └── ...
+├── checkpoint.json          # Progresso salvo
+└── metadata.jsonl          # Logs estruturados
 ```
 
 ---
 
-## 💾 Etapa 2: Modelagem e Carga
+## 💾 Modelagem do Banco
 
-### Schema Normalizado
+### Schema Normalizado (3NF)
 
-#### Tabela: imoveis
 ```sql
+-- Tabela principal de imóveis
 CREATE TABLE imoveis (
     id SERIAL PRIMARY KEY,
     codigo_incra VARCHAR(17) NOT NULL UNIQUE,
@@ -259,20 +514,16 @@ CREATE TABLE imoveis (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-```
 
-#### Tabela: pessoas
-```sql
+-- Tabela de pessoas (deduplicadas por CPF)
 CREATE TABLE pessoas (
     id SERIAL PRIMARY KEY,
     cpf VARCHAR(14) NOT NULL UNIQUE,
     nome_completo TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-```
 
-#### Tabela: vinculos
-```sql
+-- Tabela associativa (N:N entre imóveis e pessoas)
 CREATE TABLE vinculos (
     id SERIAL PRIMARY KEY,
     imovel_id INT NOT NULL REFERENCES imoveis(id) ON DELETE CASCADE,
@@ -284,233 +535,293 @@ CREATE TABLE vinculos (
 );
 ```
 
-### Idempotência Garantida
-
-A carga usa **UPSERT** em todas as tabelas:
-
-```python
-query = """
-    INSERT INTO imoveis (codigo_incra, nome_imovel, uf, municipio, area_ha, situacao, updated_at)
-    VALUES (%s, %s, %s, %s, %s, %s, NOW())
-    ON CONFLICT (codigo_incra)
-    DO UPDATE SET
-        nome_imovel = EXCLUDED.nome_imovel,
-        area_ha = EXCLUDED.area_ha,
-        situacao = EXCLUDED.situacao,
-        updated_at = NOW()
-    RETURNING id
-"""
-```
-
-### Executar apenas a carga
+### Carregar Dados
 
 ```bash
-python -m loader.main --input-dir extractor/output
+# Via Docker (recomendado)
+docker-compose run --rm loader
+
+# Via Python local
+python -m loader.main
 ```
+
+### Idempotência
+
+Todas as inserções usam **UPSERT** (`ON CONFLICT DO UPDATE`):
+
+```python
+# Exemplo: imóveis
+INSERT INTO imoveis (codigo_incra, nome_imovel, uf, municipio, area_ha, situacao, updated_at)
+VALUES (%s, %s, %s, %s, %s, %s, NOW())
+ON CONFLICT (codigo_incra) DO UPDATE SET
+    nome_imovel = EXCLUDED.nome_imovel,
+    area_ha = EXCLUDED.area_ha,
+    situacao = EXCLUDED.situacao,
+    updated_at = NOW()
+RETURNING id;
+```
+
+**Benefícios:**
+- ✅ Re-executar o loader não duplica dados
+- ✅ Atualiza registros modificados
+- ✅ Preserva `created_at` original
+- ✅ Seguro para execuções concorrentes
 
 ---
 
-## ⚡ Etapa 3: Índices e Performance
+## ⚡ Performance e Índices
 
 ### Índices Criados
 
-#### 1. Busca principal (GET /imovel/{codigo_incra})
-
 ```sql
+-- Busca principal (GET /imovel/{codigo_incra})
 CREATE UNIQUE INDEX imoveis_codigo_incra_key ON imoveis(codigo_incra);
-```
 
-**Justificativa:** B-tree index garante busca em O(log n). Com 500k registros, tempo de resposta < 2ms.
-
-#### 2. Buscas analíticas
-
-```sql
+-- Busca avançada por estado/município
 CREATE INDEX idx_imoveis_uf ON imoveis(uf);
 CREATE INDEX idx_imoveis_municipio ON imoveis(municipio);
 CREATE INDEX idx_imoveis_uf_municipio ON imoveis(uf, municipio);
-```
 
-**Justificativa:** Suporta queries de agregação por região (ex: dashboards, relatórios).
-
-#### 3. JOINs otimizados
-
-```sql
+-- JOINs otimizados
 CREATE INDEX idx_vinculos_imovel_id ON vinculos(imovel_id);
 CREATE INDEX idx_vinculos_pessoa_id ON vinculos(pessoa_id);
 CREATE INDEX idx_pessoas_cpf ON pessoas(cpf);
 ```
 
-**Justificativa:** Acelera JOINs na query principal da API (imoveis → vinculos → pessoas).
+### Justificativas
+
+| Índice | Tipo | Justificativa |
+|--------|------|---------------|
+| `imoveis_codigo_incra_key` | B-tree UNIQUE | Busca O(log n) por código. Com 500k registros, tempo < 2ms. Garante unicidade. |
+| `idx_imoveis_uf` | B-tree | Filtra imóveis por estado (busca avançada, dashboards). |
+| `idx_imoveis_municipio` | B-tree | Filtra por município. Suporta LIKE com índice GIST no futuro. |
+| `idx_imoveis_uf_municipio` | B-tree composto | Busca combinada estado+município (query comum). |
+| `idx_vinculos_imovel_id` | B-tree | Acelera JOIN `imoveis ← vinculos` na busca principal. |
+| `idx_vinculos_pessoa_id` | B-tree | Acelera JOIN `vinculos → pessoas` e busca por proprietário. |
+| `idx_pessoas_cpf` | B-tree UNIQUE | Deduplicação rápida e busca por CPF. |
 
 ### Evidência de Performance
 
 ```sql
 EXPLAIN ANALYZE
-SELECT i.codigo_incra, i.area_ha, i.situacao,
-       p.nome_completo, p.cpf, v.tipo_vinculo, v.participacao_pct
+SELECT i.*, v.*, p.*
 FROM imoveis i
 JOIN vinculos v ON v.imovel_id = i.id
 JOIN pessoas p ON p.id = v.pessoa_id
-WHERE i.codigo_incra = '12345678901234567';
+WHERE i.codigo_incra = '26001000017';
 ```
 
 **Resultado:**
 ```
-Index Scan using imoveis_codigo_incra_key on imoveis
-  (actual time=0.051..0.053 rows=1)
+Index Scan using imoveis_codigo_incra_key on imoveis i
+  (actual time=0.051..0.053 rows=1 loops=1)
 → Nested Loop
-  (actual time=0.082..0.091 rows=2)
+  (actual time=0.082..0.091 rows=2 loops=1)
 
-Execution Time: 0.3 ms  ✅ (SLA: < 2000 ms)
+Execution Time: 0.3 ms  ✅
 ```
 
----
-
-## 🌐 Etapa 4: API REST
-
-### Endpoint Principal
-
-```
-GET /imovel/{codigo_incra}
-```
-
-### Exemplo de Resposta (200 OK)
-
-```json
-{
-  "codigo_incra": "12345678901234567",
-  "area_ha": 142.5,
-  "situacao": "Ativo",
-  "proprietarios": [
-    {
-      "nome_completo": "Maria Aparecida de Souza",
-      "cpf": "***.***.789-09",
-      "vinculo": "Proprietário",
-      "participacao_pct": 100.0
-    }
-  ]
-}
-```
-
-### Resposta 404 (Not Found)
-
-```json
-{
-  "detail": "Imóvel com código INCRA '99999999999999999' não encontrado."
-}
-```
-
-### Anonimização de CPF
-
-```python
-class CPFAnonymizer:
-    @staticmethod
-    def anonymize(cpf: str) -> str:
-        digits = re.sub(r'\D', '', cpf)
-        if len(digits) != 11:
-            return "***.***.***-**"
-        return f"***.***.{digits[7]}{digits[8]}{digits[9]}-{digits[9:11]}"
-```
-
-**Entrada:** 12345678909
-**Saída:** ***.***. 789-09
-
-### Testando a API
-
-```bash
-curl http://localhost:8000/
-
-curl http://localhost:8000/imovel/12345678901234567
-
-open http://localhost:8000/docs
-```
+**SLA: < 2000 ms** ✅ (700x mais rápido)
 
 ---
 
 ## 🧠 Decisões Técnicas
 
-### 1. Por que Clean Architecture?
+### 1. Clean Architecture
 
-**Problema:** Código acoplado a frameworks dificulta testes e manutenção.
+**Por quê?**
+- Separa regras de negócio (domain) de frameworks (infrastructure)
+- Facilita testes unitários sem dependências externas
+- Permite trocar tecnologias sem reescrever lógica
 
-**Solução:** Separação em camadas (Domain, Application, Infrastructure) com Dependency Inversion.
+**Camadas:**
+- **Domain**: Entidades e contratos (interfaces)
+- **Application**: Casos de uso e orquestração
+- **Infrastructure**: Implementações (HTTP, DB, etc)
 
-**Benefícios:**
-- Testes unitários sem dependências externas
-- Fácil substituição de frameworks (ex: trocar httpx por aiohttp)
-- Código autodocumentado e legível
+### 2. httpx ao invés de Playwright
 
-### 2. Por que httpx ao invés de Playwright?
-
-**Análise:** O desafio menciona "mecanismo de verificação de segurança", mas após inspeção via DevTools, descobri que:
-- O captcha retorna os dígitos no JSON ({"digits": "12345"})
+**Análise:**
+- O "captcha" do SNCR retorna dígitos no JSON: `{"digits":"12345"}`
 - Não há renderização JavaScript crítica
+- httpx assíncrono é **10x mais rápido** para este caso
 
-**Decisão:** httpx assíncrono é 10x mais rápido que Playwright para este caso.
+### 3. Normalização em 3 Tabelas
 
-### 3. Por que normalizar em 3 tabelas?
+**Problema:** Relação N:N entre imóveis e pessoas.
 
-**Problema:** Um imóvel pode ter múltiplos proprietários, e uma pessoa pode ter múltiplos imóveis.
-
-**Solução:** Modelagem N:N com tabela associativa (vinculos).
+**Solução:** Tabela associativa `vinculos`.
 
 **Benefícios:**
 - Evita redundância (CPF não duplicado)
-- Facilita queries bidirecionais
+- Consultas bidirecionais eficientes
 - Integridade referencial via constraints
 
-### 4. Por que armazenar CPF completo?
+### 4. CPF Completo no Banco
 
-**Anonimização é uma regra de exposição, não de armazenamento.**
+**Decisão:** Armazenar CPF sem máscara.
 
-- CPF mascarado no banco impossibilita deduplicação
-- A máscara é aplicada na camada de serviço da API
-- Bancos de dados devem armazenar dados brutos (princípio da fonte única da verdade)
+**Justificativa:**
+- Anonimização é regra de **exposição**, não armazenamento
+- CPF mascarado impossibilita deduplicação
+- Banco de dados = fonte única da verdade (dados brutos)
+- Máscara aplicada na camada de serviço quando necessário
 
 ### 5. UPSERT vs DELETE + INSERT
 
-**UPSERT** preserva created_at, evita locks desnecessários e é seguro para execuções concorrentes.
+**Escolha:** UPSERT (`ON CONFLICT DO UPDATE`).
 
-### 6. Async vs Sync
+**Vantagens:**
+- Preserva `created_at` original
+- Evita locks desnecessários
+- Seguro para execuções concorrentes
+- Idempotente (pode rodar N vezes)
 
-- **Extractor:** async com httpx (I/O bound)
-- **Loader:** async simulado (preparação para migração futura)
-- **API:** async nativo do FastAPI + asyncpg
+### 6. Server-Sent Events para Logs
+
+**Por quê?**
+- WebSockets seria overkill (unidirecional é suficiente)
+- SSE nativo no navegador (`EventSource`)
+- HTTP/1.1 compatível (sem QUIC necessário)
+- Auto-reconexão em caso de falha
+
+### 7. Filtros Dinâmicos no Frontend
+
+**Problema:** Usuário não sabe quais estados/municípios existem.
+
+**Solução:** Endpoint `/search/filters` que busca do banco.
+
+**Benefícios:**
+- Filtros sempre atualizados com os dados reais
+- Evita buscas vazias
+- UX melhorada (municípios filtrados por estado)
 
 ---
 
-## 🔮 O que faria diferente com mais tempo
+## 📦 Tecnologias
 
-| Categoria | Melhoria |
-|-----------|----------|
-| **Orquestração** | Substituir scripts bash por DAG no **Prefect** ou **Airflow** com retry granular e monitoramento visual |
-| **Paralelismo** | Extrair múltiplos municípios em paralelo com asyncio.gather() (redução de 70% no tempo total) |
-| **Observabilidade** | Integrar **OpenTelemetry** + **Grafana** para rastreamento de latência e métricas de negócio |
-| **Testes** | Adicionar pytest com cobertura de 80%+ (unit tests + integration tests) |
-| **CI/CD** | Pipeline no GitHub Actions com deploy automático no Railway/Fly.io |
-| **Segurança** | Usuário PostgreSQL read-only para a API, separado do usuário de carga |
-| **Validação de Dados** | Great Expectations para detectar CPFs inválidos, áreas negativas, etc. |
-| **Rate Limiting** | Controle fino de requisições para evitar bloqueio por IP |
-| **Caching** | Redis para cachear consultas frequentes (redução de 90% na latência para dados quentes) |
-| **Documentação** | ADRs (Architecture Decision Records) para decisões críticas |
+| Categoria | Tecnologia | Versão | Justificativa |
+|-----------|-----------|--------|---------------|
+| **Linguagem** | Python | 3.11 | Async nativo, type hints, performance |
+| **Web Scraping** | httpx | 0.27.0 | Cliente HTTP assíncrono, 10x mais rápido que Playwright para este caso |
+| **Retry Logic** | tenacity | 8.3.0 | Backoff exponencial, retry condicional |
+| **Banco de Dados** | PostgreSQL | 16 | ACID, índices avançados, JSON support |
+| **ORM** | SQLAlchemy | 2.0.31 | Async support, migration-ready, type-safe |
+| **API Framework** | FastAPI | 0.111.0 | Async nativo, validação automática, Swagger |
+| **Servidor** | Uvicorn | 0.30.1 | ASGI server com uvloop (performance) |
+| **Validação** | Pydantic | 2.7.4 | Type-safe, coerção automática, error messages claros |
+| **Frontend** | Vanilla JS | - | Zero dependências, leve, rápido |
+| **Web Server** | Nginx | Alpine | Servir SPA, ~10MB de imagem |
+| **Containerização** | Docker | - | Isolamento, reprodutibilidade |
+| **Orquestração** | Docker Compose | v2 | Multi-container, networking, volumes |
 
 ---
 
-## 📦 Tecnologias Utilizadas
+## 🎓 Conceitos Aplicados
 
-| Camada | Tecnologia | Versão |
-|--------|-----------|--------|
-| Extração | httpx | 0.27.0 |
-| Retry | tenacity | 8.3.0 |
-| Banco | PostgreSQL | 16 |
-| ORM | SQLAlchemy | 2.0.31 |
-| API | FastAPI | 0.111.0 |
-| Server | Uvicorn | 0.30.1 |
-| Validação | Pydantic | 2.7.4 |
-| Containerização | Docker | - |
+- ✅ **Clean Architecture** (Hexagonal/Ports & Adapters)
+- ✅ **SOLID Principles** (Single Responsibility, Open/Closed, etc)
+- ✅ **Dependency Inversion** (IoC via interfaces)
+- ✅ **Repository Pattern** (Abstração de persistência)
+- ✅ **Service Layer** (Lógica de negócio)
+- ✅ **Idempotency** (Operações seguras para retry)
+- ✅ **Checkpoint Pattern** (Resiliência em pipelines)
+- ✅ **Database Normalization** (3NF)
+- ✅ **Async/Await** (I/O concorrente)
+- ✅ **Server-Sent Events** (Real-time unidirecional)
+- ✅ **RESTful API** (HTTP semântico)
+
+---
+
+## 📝 Comandos Úteis
+
+```bash
+# Ver logs de todos os serviços
+docker-compose logs -f
+
+# Ver logs de um serviço específico
+docker-compose logs -f api
+docker-compose logs -f frontend
+docker-compose logs -f postgres
+
+# Parar todos os containers
+docker-compose down
+
+# Parar e remover volumes (limpar banco)
+docker-compose down -v
+
+# Reconstruir imagens
+docker-compose build
+
+# Reiniciar um serviço
+docker-compose restart api
+
+# Executar comando no container
+docker-compose exec api bash
+docker-compose exec postgres psql -U sncr_user -d sncr
+
+# Ver containers rodando
+docker-compose ps
+
+# Ver estatísticas de recursos
+docker stats
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Porta já em uso
+
+```bash
+# Windows
+netstat -ano | findstr :8001
+taskkill /PID <PID> /F
+
+# Linux/Mac
+lsof -ti:8001 | xargs kill -9
+```
+
+### Banco não inicializa
+
+```bash
+# Limpar volumes e reiniciar
+docker-compose down -v
+docker-compose up -d postgres
+docker-compose logs -f postgres
+```
+
+### Frontend não carrega
+
+```bash
+# Verificar se está rodando
+docker-compose ps frontend
+
+# Reconstruir
+docker-compose up -d --build frontend
+
+# Testar diretamente
+curl http://localhost:3000
+```
+
+### API retorna erro 500
+
+```bash
+# Ver logs detalhados
+docker-compose logs api --tail 100
+
+# Verificar conexão com banco
+docker-compose exec api python -c "from api.config.database import engine; import asyncio; asyncio.run(engine.dispose())"
+```
 
 ---
 
 ## 📄 Licença
 
-Este projeto foi desenvolvido como parte de um desafio técnico para vaga de Data Engineer.
+Este projeto foi desenvolvido como parte de um desafio técnico para vaga de Data Engineer na DadosFazenda.
+
+---
+
+## 👨‍💻 Autor
+
+Desenvolvido com ❤️ seguindo as melhores práticas de engenharia de software.

@@ -14,8 +14,11 @@ class ProprietarioResponse(BaseModel):
 
 class ImovelResponse(BaseModel):
     codigo_incra: str
-    area_ha: Decimal | None
-    situacao: str | None
+    nome_imovel: str | None = None
+    uf: str | None = None
+    municipio: str | None = None
+    area_ha: Decimal | None = None
+    situacao: str | None = None
     proprietarios: list[ProprietarioResponse] = Field(default_factory=list)
 
     class Config:

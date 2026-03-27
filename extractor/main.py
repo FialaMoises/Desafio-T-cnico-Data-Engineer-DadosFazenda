@@ -13,6 +13,7 @@ from extractor.infrastructure.http_client import (
 from extractor.infrastructure.checkpoint_manager import CheckpointManager
 from extractor.infrastructure.metadata_writer import MetadataWriter
 from extractor.infrastructure.proxy_manager import ProxyManager
+from extractor.infrastructure.user_agent_manager import UserAgentManager
 from extractor.application.scraper_service import ScraperService
 
 
@@ -24,12 +25,19 @@ async def main(ufs: list[str], resume: bool, retry_until_complete: bool) -> None
     if proxy_manager.has_proxies():
         logger.info(f"🔄 Proxy rotation ativado com {len(proxy_manager.proxies)} proxies")
 
-    client_kwargs = {"timeout": 20, "follow_redirects": True}
+    client_kwargs = {
+        "timeout": 20,
+        "follow_redirects": True,
+        "headers": UserAgentManager.get_headers() if settings.use_random_user_agent else {}
+    }
 
     if settings.use_proxy_rotation and proxy_manager.has_proxies():
         proxy_url = proxy_manager.get_random_proxy()
         client_kwargs["proxies"] = {"http://": proxy_url, "https://": proxy_url}
         logger.info(f"🌐 Usando proxy: {proxy_url}")
+
+    if settings.use_random_user_agent:
+        logger.info(f"🎭 User-Agent rotation ativado")
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         estado_repo = HttpEstadoRepository(client)

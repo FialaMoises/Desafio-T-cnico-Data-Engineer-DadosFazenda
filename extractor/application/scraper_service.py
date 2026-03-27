@@ -1,4 +1,5 @@
 import asyncio
+import random
 from datetime import datetime, timezone
 from logging import Logger
 from pathlib import Path
@@ -57,7 +58,9 @@ class ScraperService:
                     await asyncio.sleep(backoff_time)
 
                 captcha = await self.captcha_repo.get_captcha()
-                await asyncio.sleep(settings.delay_seconds)
+
+                delay = settings.delay_seconds + random.uniform(0, settings.delay_random_range)
+                await asyncio.sleep(delay)
 
                 content = await self.export_repo.export_csv(
                     uf=uf,
@@ -138,7 +141,9 @@ class ScraperService:
             for municipio in pendentes:
                 await self.process_municipio(uf, municipio, concluidos)
                 self.checkpoint_manager.save(uf, concluidos)
-                await asyncio.sleep(settings.delay_seconds)
+
+                delay = settings.delay_seconds + random.uniform(0, settings.delay_random_range)
+                await asyncio.sleep(delay)
 
             if not retry_until_complete:
                 self.logger.info(

@@ -42,34 +42,6 @@ class PostgresImovelRepository(ImovelRepository):
                 situacao = EXCLUDED.situacao,
                 updated_at = NOW()
             RETURNING id
-        """
-        with self.db.get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(query, (
-                    imovel.codigo_incra,
-                    imovel.nome_imovel,
-                    imovel.uf,
-                    imovel.municipio,
-                    imovel.area_ha,
-                    imovel.situacao
-                ))
-                result = cursor.fetchone()
-                return result[0] if result else 0
-
-
-class PostgresPessoaRepository(PessoaRepository):
-    def __init__(self, db: DatabaseConnection):
-        self.db = db
-
-    async def upsert(self, pessoa: Pessoa) -> int:
-        query = """
-            INSERT INTO pessoas (cpf, nome_completo)
-            VALUES (%s, %s)
-            ON CONFLICT (cpf)
-            DO UPDATE SET
-                nome_completo = EXCLUDED.nome_completo
-            RETURNING id
-        """
         with self.db.get_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(query, (pessoa.cpf, pessoa.nome_completo))
@@ -96,12 +68,3 @@ class PostgresVinculoRepository(VinculoRepository):
             ON CONFLICT (imovel_id, pessoa_id, tipo_vinculo)
             DO UPDATE SET
                 participacao_pct = EXCLUDED.participacao_pct
-        """
-        values = [
-            (v.codigo_incra, v.cpf, v.tipo_vinculo, v.participacao_pct)
-            for v in vinculos
-        ]
-
-        with self.db.get_connection() as conn:
-            with conn.cursor() as cursor:
-                execute_values(cursor, query, values)
